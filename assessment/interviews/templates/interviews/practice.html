@@ -16,11 +16,11 @@
 
             <audio id="audio-{{ question.id }}" controls></audio>
 
-            <form action="{% url 'save_audio' %}" method="POST" enctype="multipart/form-data">
+            <form action="{% url 'save_audio' %}" method="POST">
                 {% csrf_token %}
                 <input type="hidden" name="question_id" value="{{ question.id }}">
                 <input type="hidden" name="audio_file" id="audio-file-{{ question.id }}">
-                <button type="submit">Submit Answer</button>
+                <button type="submit" id="submit-{{ question.id }}" disabled>Submit Answer</button>
             </form>
             
             <hr>
@@ -40,7 +40,7 @@
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks[questionId] = [];
-                
+
                 mediaRecorder.ondataavailable = event => {
                     audioChunks[questionId].push(event.data);
                 };
@@ -50,8 +50,13 @@
                     const audioUrl = URL.createObjectURL(audioBlob);
                     document.getElementById(`audio-${questionId}`).src = audioUrl;
 
-                    const fileInput = document.getElementById(`audio-file-${questionId}`);
-                    fileInput.value = audioBlob;
+                    // Convert Blob to Base64
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = function () {
+                        document.getElementById(`audio-file-${questionId}`).value = reader.result;
+                        document.getElementById(`submit-${questionId}`).disabled = false;
+                    };
                 };
 
                 mediaRecorder.start();

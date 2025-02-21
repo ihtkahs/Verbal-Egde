@@ -53,6 +53,7 @@ def save_audio(request):
         user = request.user
         question_id = request.POST.get('question_id')
         audio_data = request.POST.get('audio_file')
+        print(audio_data)
 
         if not audio_data:
             return HttpResponse("No audio file received", status=400)
