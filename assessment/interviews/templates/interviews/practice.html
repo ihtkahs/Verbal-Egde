@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Practice Interview Questions</title>
+</head>
+<body>
+    <h2>Practice Interview Questions</h2>
+
+    {% for question in questions %}
+        <div>
+            <p><strong>Q{{ forloop.counter }}:</strong> {{ question.question_text }}</p>
+            
+            <!-- Audio Recording Section -->
+            <button onclick="startRecording({{ question.id }})">🎙 Start Recording</button>
+            <button onclick="stopRecording({{ question.id }})" disabled>⏹ Stop Recording</button>
+
+            <audio id="audio-{{ question.id }}" controls></audio>
+
+            <form action="{% url 'save_audio' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="question_id" value="{{ question.id }}">
+                <input type="hidden" name="audio_file" id="audio-file-{{ question.id }}">
+                <button type="submit">Submit Answer</button>
+            </form>
+            
+            <hr>
+        </div>
+    {% empty %}
+        <p>No questions available.</p>
+    {% endfor %}
+
+    <a href="{% url 'dashboard' %}">Back to Dashboard</a>
+
+    <!-- JavaScript for Audio Recording -->
+    <script>
+        let mediaRecorder;
+        let audioChunks = {};
+
+        function startRecording(questionId) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks[questionId] = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks[questionId].push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks[questionId], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById(`audio-${questionId}`).src = audioUrl;
+
+                    const fileInput = document.getElementById(`audio-file-${questionId}`);
+                    fileInput.value = audioBlob;
+                };
+
+                mediaRecorder.start();
+                document.querySelector(`button[onclick="stopRecording(${questionId})"]`).disabled = false;
+            });
+        }
+
+        function stopRecording(questionId) {
+            mediaRecorder.stop();
+            document.querySelector(`button[onclick="stopRecording(${questionId})"]`).disabled = true;
+        }
+    </script>
+</body>
+</html>
