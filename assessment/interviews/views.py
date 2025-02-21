@@ -17,7 +17,7 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('dashboard')  # Redirect to a dashboard/home page after signup
+            return redirect('dashboard')  # Redirect to dashboard after signup
     else:
         form = SignupForm()
     return render(request, 'interviews/signup.html', {'form': form})
@@ -43,31 +43,56 @@ def logout_view(request):
 def dashboard_view(request):
     return render(request, 'interviews/dashboard.html')
 
+@login_required
 def practice_view(request):
-    questions = Question.objects.all()  # Fetch all questions
-    return render(request, 'interviews/practice.html', {'questions': questions})
+    questions = Question.objects.all()
+    return render(request, 'interviews/practice_home.html', {'questions': questions})
+
+@login_required
+def dashboard_home(request):
+    if request.headers.get('HX-Request'):
+        return render(request, 'interviews/dashboard_home.html')
+    return render(request, 'interviews/dashboard.html')
+
+@login_required
+def practice(request):
+    if request.headers.get('HX-Request'):
+        return render(request, 'interviews/practice.html')
+    return render(request, 'interviews/dashboard.html')
+
+@login_required
+def responses(request):
+    if request.headers.get('HX-Request'):
+        return render(request, 'interviews/responses.html')
+    return render(request, 'interviews/dashboard.html')
+
+@login_required
+def performance(request):
+    if request.headers.get('HX-Request'):
+        return render(request, 'interviews/performance.html')
+    return render(request, 'interviews/dashboard.html')
+
+@login_required
+def settings_home(request):
+    if request.headers.get('HX-Request'):
+        return render(request, 'interviews/settings_home.html')
+    return render(request, 'interviews/dashboard.html')
 
 @csrf_exempt  # Temporarily disable CSRF for testing
 def save_audio(request):
     if request.method == 'POST':
         user = request.user
-        question_id = request.POST.get('question_id')
-        audio_data = request.POST.get('audio_file')
-        print(audio_data)
+        question_ids = request.POST.getlist('question_id')
 
-        if not audio_data:
-            return HttpResponse("No audio file received", status=400)
+        for question_id in question_ids:
+            audio_file = request.FILES.get(f'audio_file_{question_id}')
 
-        question = Question.objects.get(id=question_id)
-        
-        # Decode base64 audio data
-        format, audio_str = audio_data.split(';base64,')
-        ext = format.split('/')[-1]  # Get file extension
-        audio_bytes = base64.b64decode(audio_str)
+            if not audio_file:
+                return HttpResponse(f"No audio file received for question {question_id}", status=400)
 
-        # Save audio file
-        audio_file = ContentFile(audio_bytes, name=f"{user.username}_Q{question_id}.{ext}")
-        AudioResponse.objects.create(user=user, question=question, audio_file=audio_file)
+            question = Question.objects.get(id=question_id)
+            AudioResponse.objects.create(user=user, question=question, audio_file=audio_file)
 
-        return redirect('practice') 
+        return redirect('practice_home')
 
+    return HttpResponse("Invalid request", status=400)

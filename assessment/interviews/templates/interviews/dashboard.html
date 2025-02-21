@@ -1,12 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background: #2C3E50;
+            color: white;
+            padding: 20px;
+            position: fixed;
+            height: 100%;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            padding: 15px;
+            border-bottom: 1px solid #34495E;
+        }
+
+        .sidebar ul li a {
+            text-decoration: none;
+            color: white;
+            display: block;
+            cursor: pointer;
+        }
+
+        .sidebar ul li:hover {
+            background: #1A252F;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <h2>Welcome, {{ request.user.username }}!</h2>
-    <p>You have successfully logged in.</p>
-    
-    <a href="{% url 'logout' %}">Logout</a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Dashboard</h2>
+        <ul>
+            <li><a hx-get="{% url 'dashboard_home' %}" hx-target="#main-content" hx-push-url="true">🏠 Home</a></li>
+            <li><a hx-get="{% url 'practice' %}" hx-target="#main-content" hx-push-url="true">🎤 Practice Interviews</a></li>
+            <li><a hx-get="{% url 'responses' %}" hx-target="#main-content" hx-push-url="true">🎧 My Responses</a></li>
+            <li><a hx-get="{% url 'performance' %}" hx-target="#main-content" hx-push-url="true">📊 Performance</a></li>
+            <li><a hx-get="{% url 'settings_home' %}" hx-target="#main-content" hx-push-url="true">⚙️ Settings</a></li>
+            <li><a href="{% url 'logout' %}">🚪 Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+        {% include 'interviews/dashboard_home.html' %}
+    </div>
+
 </body>
 </html>

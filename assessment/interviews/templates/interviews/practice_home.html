@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Practice Interview Questions</title>
+</head>
+<body>
+    <h2>Practice Interview Questions</h2>
+
+    <form id="submit-form" action="{% url 'save_audio' %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for question in questions %}
+            <div>
+                <p><strong>Q{{ forloop.counter }}:</strong> {{ question.question_text }}</p>
+
+                <!-- Audio Recording Section -->
+                <button type="button" onclick="startRecording({{ question.id }})">🎙 Start Recording</button>
+                <button type="button" onclick="stopRecording({{ question.id }})" id="stop-btn-{{ question.id }}" disabled>⏹ Stop Recording</button>
+
+                <audio id="audio-{{ question.id }}" controls></audio>
+
+                <input type="hidden" name="question_id" value="{{ question.id }}">
+                <input type="file" name="audio_file_{{ question.id }}" id="audio-file-{{ question.id }}" hidden>
+
+                <hr>
+            </div>
+        {% empty %}
+            <p>No questions available.</p>
+        {% endfor %}
+
+        <button type="submit" id="submit-all" disabled>Submit All Answers</button>
+    </form>
+
+    <a href="{% url 'dashboard' %}">Back to Dashboard</a>
+
+    <!-- JavaScript for Audio Recording -->
+    <script>
+        let mediaRecorder;
+        let audioChunks = {};
+        let recordedQuestions = new Set(); // Tracks recorded answers
+
+        function startRecording(questionId) {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks[questionId] = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks[questionId].push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks[questionId], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById(`audio-${questionId}`).src = audioUrl;
+
+                    // Convert Blob to File
+                    const fileInput = document.getElementById(`audio-file-${questionId}`);
+                    const audioFile = new File([audioBlob], `question_${questionId}.wav`, { type: 'audio/wav' });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(audioFile);
+                    fileInput.files = dataTransfer.files;
+
+                    recordedQuestions.add(questionId);
+                    checkAllRecorded(); // Enable submit button if all questions are answered
+                };
+
+                mediaRecorder.start();
+                document.getElementById(`stop-btn-${questionId}`).disabled = false;
+            });
+        }
+
+        function stopRecording(questionId) {
+            mediaRecorder.stop();
+            document.getElementById(`stop-btn-${questionId}`).disabled = true;
+        }
+
+        function checkAllRecorded() {
+            const totalQuestions = document.querySelectorAll("[name='question_id']").length;
+            if (recordedQuestions.size === totalQuestions) {
+                document.getElementById("submit-all").disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
